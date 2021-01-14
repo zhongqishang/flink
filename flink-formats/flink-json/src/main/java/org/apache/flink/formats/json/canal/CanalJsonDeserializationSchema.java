@@ -160,21 +160,23 @@ public final class CanalJsonDeserializationSchema implements DeserializationSche
     }
 
     @Override
-    public void deserialize(byte[] message, Collector<RowData> out) throws IOException {
+    public void deserialize(@Nullable byte[] message, Collector<RowData> out) throws IOException {
+        if (message == null || message.length == 0) {
+            return;
+        }
         try {
-            RowData row = jsonDeserializer.deserialize(message);
+            final JsonNode root = jsonDeserializer.deserializeToJsonNode(message);
             if (database != null) {
-                String currentDatabase = row.getString(3).toString();
-                if (!database.equals(currentDatabase)) {
+                if (!database.equals(root.get(ReadableMetadata.DATABASE.key).asText())) {
                     return;
                 }
             }
             if (table != null) {
-                String currentTable = row.getString(4).toString();
-                if (!table.equals(currentTable)) {
+                if (!table.equals(root.get(ReadableMetadata.TABLE.key).asText())) {
                     return;
                 }
             }
+            final GenericRowData row = (GenericRowData) jsonDeserializer.convertToRowData(root);
             String type = row.getString(2).toString(); // "type" field
             if (OP_INSERT.equals(type)) {
                 // "data" field is an array of row, contains inserted rows

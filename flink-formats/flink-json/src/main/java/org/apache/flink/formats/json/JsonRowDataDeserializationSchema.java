@@ -95,8 +95,7 @@ public class JsonRowDataDeserializationSchema implements DeserializationSchema<R
     @Override
     public RowData deserialize(byte[] message) throws IOException {
         try {
-            final JsonNode root = objectMapper.readTree(message);
-            return (RowData) runtimeConverter.convert(root);
+            return convertToRowData(deserializeToJsonNode(message));
         } catch (Throwable t) {
             if (ignoreParseErrors) {
                 return null;
@@ -104,6 +103,14 @@ public class JsonRowDataDeserializationSchema implements DeserializationSchema<R
             throw new IOException(
                     format("Failed to deserialize JSON '%s'.", new String(message)), t);
         }
+    }
+
+    public JsonNode deserializeToJsonNode(byte[] message) throws IOException {
+        return objectMapper.readTree(message);
+    }
+
+    public RowData convertToRowData(JsonNode message) {
+        return (RowData) runtimeConverter.convert(message);
     }
 
     @Override
