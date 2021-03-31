@@ -26,14 +26,34 @@ import java.util.Objects;
 /** Options for the JDBC lookup. */
 public class JdbcLookupOptions implements Serializable {
 
+    private final int maxPoolSize;
+    private final int threadPoolSize;
     private final long cacheMaxSize;
     private final long cacheExpireMs;
     private final int maxRetryTimes;
+    private final boolean lookupAsync;
 
-    public JdbcLookupOptions(long cacheMaxSize, long cacheExpireMs, int maxRetryTimes) {
+    public JdbcLookupOptions(
+            int maxPoolSize,
+            int threadPoolSize,
+            long cacheMaxSize,
+            long cacheExpireMs,
+            int maxRetryTimes,
+            boolean lookupAsync) {
+        this.maxPoolSize = maxPoolSize;
+        this.threadPoolSize = threadPoolSize;
         this.cacheMaxSize = cacheMaxSize;
         this.cacheExpireMs = cacheExpireMs;
         this.maxRetryTimes = maxRetryTimes;
+        this.lookupAsync = lookupAsync;
+    }
+
+    public int getMaxPoolSize() {
+        return maxPoolSize;
+    }
+
+    public int getThreadPoolSize() {
+        return threadPoolSize;
     }
 
     public long getCacheMaxSize() {
@@ -48,6 +68,10 @@ public class JdbcLookupOptions implements Serializable {
         return maxRetryTimes;
     }
 
+    public boolean getLookupAsync() {
+        return lookupAsync;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -56,9 +80,12 @@ public class JdbcLookupOptions implements Serializable {
     public boolean equals(Object o) {
         if (o instanceof JdbcLookupOptions) {
             JdbcLookupOptions options = (JdbcLookupOptions) o;
-            return Objects.equals(cacheMaxSize, options.cacheMaxSize)
+            return Objects.equals(maxPoolSize, options.maxPoolSize)
+                    && Objects.equals(threadPoolSize, options.threadPoolSize)
+                    && Objects.equals(cacheMaxSize, options.cacheMaxSize)
                     && Objects.equals(cacheExpireMs, options.cacheExpireMs)
-                    && Objects.equals(maxRetryTimes, options.maxRetryTimes);
+                    && Objects.equals(maxRetryTimes, options.maxRetryTimes)
+                    && Objects.equals(lookupAsync, options.lookupAsync);
         } else {
             return false;
         }
@@ -66,9 +93,27 @@ public class JdbcLookupOptions implements Serializable {
 
     /** Builder of {@link JdbcLookupOptions}. */
     public static class Builder {
+        private int maxPoolSize = 8;
+        private int threadPoolSize = 8;
         private long cacheMaxSize = -1L;
         private long cacheExpireMs = -1L;
         private int maxRetryTimes = JdbcExecutionOptions.DEFAULT_MAX_RETRY_TIMES;
+        private boolean lookupAsync = false;
+
+        /** optional, max connection pool size, over this value, the old data will be eliminated. */
+        public Builder setMaxPoolSize(int maxPoolSize) {
+            this.maxPoolSize = maxPoolSize;
+            return this;
+        }
+
+        /**
+         * optional, async lookup thread pool size, over this value, the old data will be
+         * eliminated.
+         */
+        public Builder setThreadPoolSize(int threadPoolSize) {
+            this.threadPoolSize = threadPoolSize;
+            return this;
+        }
 
         /** optional, lookup cache max size, over this value, the old data will be eliminated. */
         public Builder setCacheMaxSize(long cacheMaxSize) {
@@ -88,8 +133,20 @@ public class JdbcLookupOptions implements Serializable {
             return this;
         }
 
+        /** optional, whether to set async lookup. */
+        public Builder setLookupAsync(boolean lookupAsync) {
+            this.lookupAsync = lookupAsync;
+            return this;
+        }
+
         public JdbcLookupOptions build() {
-            return new JdbcLookupOptions(cacheMaxSize, cacheExpireMs, maxRetryTimes);
+            return new JdbcLookupOptions(
+                    maxPoolSize,
+                    threadPoolSize,
+                    cacheMaxSize,
+                    cacheExpireMs,
+                    maxRetryTimes,
+                    lookupAsync);
         }
     }
 }

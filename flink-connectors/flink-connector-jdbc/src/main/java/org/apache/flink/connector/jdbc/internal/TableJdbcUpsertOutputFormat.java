@@ -65,7 +65,7 @@ class TableJdbcUpsertOutputFormat
         super.open(taskNumber, numTasks);
         deleteExecutor = createDeleteExecutor();
         try {
-            deleteExecutor.prepareStatements(connection);
+            deleteExecutor.prepareStatements(connectionProvider.getConnection());
         } catch (SQLException e) {
             throw new IOException(e);
         }
