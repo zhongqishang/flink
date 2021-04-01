@@ -93,7 +93,7 @@ public class JdbcLookupOptions implements Serializable {
 
     /** Builder of {@link JdbcLookupOptions}. */
     public static class Builder {
-        private int maxPoolSize = 8;
+        private int maxPoolSize = 4;
         private int threadPoolSize = 8;
         private long cacheMaxSize = -1L;
         private long cacheExpireMs = -1L;

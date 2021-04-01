@@ -133,6 +133,12 @@ public class JdbcDynamicTableFactory implements DynamicTableSourceFactory, Dynam
     public static final ConfigOption<Integer> LOOKUP_ASYNC_POOL_SIZE =
             ConfigOptions.key("lookup.async.pool.size")
                     .intType()
+                    .defaultValue(4)
+                    .withDescription("the number of jdbc connection pool.");
+
+    public static final ConfigOption<Integer> LOOKUP_ASYNC_THREAD_SIZE =
+            ConfigOptions.key("lookup.async.thread.size")
+                    .intType()
                     .defaultValue(8)
                     .withDescription("the number of jdbc connection pool.");
 
@@ -251,6 +257,7 @@ public class JdbcDynamicTableFactory implements DynamicTableSourceFactory, Dynam
     private JdbcLookupOptions getJdbcLookupOptions(ReadableConfig readableConfig) {
         return JdbcLookupOptions.builder()
                 .setMaxPoolSize(readableConfig.get(LOOKUP_ASYNC_POOL_SIZE))
+                .setThreadPoolSize(readableConfig.get(LOOKUP_ASYNC_THREAD_SIZE))
                 .setCacheExpireMs(readableConfig.get(LOOKUP_CACHE_TTL).toMillis())
                 .setCacheMaxSize(readableConfig.get(LOOKUP_CACHE_MAX_ROWS))
                 .setLookupAsync(readableConfig.get(LOOKUP_ASYNC))
@@ -312,6 +319,9 @@ public class JdbcDynamicTableFactory implements DynamicTableSourceFactory, Dynam
         optionalOptions.add(SINK_MAX_RETRIES);
         optionalOptions.add(FactoryUtil.SINK_PARALLELISM);
         optionalOptions.add(MAX_RETRY_TIMEOUT);
+        optionalOptions.add(LOOKUP_ASYNC);
+        optionalOptions.add(LOOKUP_ASYNC_POOL_SIZE);
+        optionalOptions.add(LOOKUP_ASYNC_THREAD_SIZE);
         return optionalOptions;
     }
 
