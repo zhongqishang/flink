@@ -32,6 +32,8 @@ import org.apache.flink.table.types.logical.RowType;
 import org.apache.flink.types.RowKind;
 import org.apache.flink.util.Collector;
 
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
+
 import javax.annotation.Nullable;
 
 import java.io.IOException;
@@ -58,6 +60,7 @@ public final class CanalJsonDeserializationSchema implements DeserializationSche
     private static final String OP_UPDATE = "UPDATE";
     private static final String OP_DELETE = "DELETE";
     private static final String OP_CREATE = "CREATE";
+    private static final String OP_ALTER = "ALTER";
 
     /** The deserializer to deserialize Debezium JSON data. */
     private final JsonRowDataDeserializationSchema jsonDeserializer;
@@ -220,6 +223,10 @@ public final class CanalJsonDeserializationSchema implements DeserializationSche
                 // "data" field is null and "type" is "CREATE" which means
                 // this is a DDL change event, and we should skip it.
                 return;
+            } else if (OP_ALTER.equals(type)) {
+                // "data" field is null and "type" is "ALTER" which means
+                // this is a DDL change event, and we should skip it.
+                return;
             } else {
                 if (!ignoreParseErrors) {
                     throw new IOException(
@@ -277,5 +284,49 @@ public final class CanalJsonDeserializationSchema implements DeserializationSche
                                 DataTypes.FIELD("database", DataTypes.STRING()),
                                 DataTypes.FIELD("table", DataTypes.STRING()))
                         .getLogicalType();
+    }
+
+    /** List of metadata that can be read with this format. */
+    enum ReadableMetadata {
+        DATABASE(
+                "database",
+                DataTypes.STRING().nullable(),
+                DataTypes.FIELD("database", DataTypes.STRING())),
+
+        TABLE("table", DataTypes.STRING().nullable(), DataTypes.FIELD("table", DataTypes.STRING())),
+
+        SQL_TYPE(
+                "sql-type",
+                DataTypes.MAP(DataTypes.STRING().nullable(), DataTypes.INT().nullable()).nullable(),
+                DataTypes.FIELD(
+                        "sqlType",
+                        DataTypes.MAP(DataTypes.STRING().nullable(), DataTypes.INT().nullable()))),
+
+        PK_NAMES(
+                "pk-names",
+                DataTypes.ARRAY(DataTypes.STRING()).nullable(),
+                DataTypes.FIELD("pkNames", DataTypes.ARRAY(DataTypes.STRING()))),
+
+        INGESTION_TIMESTAMP(
+                "ingestion-timestamp",
+                DataTypes.TIMESTAMP_WITH_LOCAL_TIME_ZONE(3).nullable(),
+                DataTypes.FIELD("ts", DataTypes.BIGINT())),
+
+        EVENT_TIMESTAMP(
+                "event-timestamp",
+                DataTypes.TIMESTAMP_WITH_LOCAL_TIME_ZONE(3).nullable(),
+                DataTypes.FIELD("es", DataTypes.BIGINT()));
+
+        final String key;
+
+        final DataType dataType;
+
+        final DataTypes.Field requiredJsonField;
+
+        ReadableMetadata(String key, DataType dataType, DataTypes.Field requiredJsonField) {
+            this.key = key;
+            this.dataType = dataType;
+            this.requiredJsonField = requiredJsonField;
+        }
     }
 }
